@@ -1,0 +1,81 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: flutter pub get
+      
+    - name: Run tests
+      run: flutter test
+      
+    - name: Build APK
+      run: flutter build apk --release
+      
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: truck-log-app-release
+        path: build/app/outputs/flutter-apk/app-release.apk
+        
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        body: |
+          ## 長距離トラック運行ログ v${{ github.run_number }}
+          
+          ### 新機能・改善点
+          - 運行記録の自動保存
+          - GPS位置情報の記録
+          - 給油記録機能
+          - 休憩記録機能
+          - ダークモード対応
+          - データエクスポート機能（PDF/CSV）
+          
+          ### インストール方法
+          1. 下記のAPKファイルをダウンロード
+          2. Android端末で「提供元不明のアプリ」を許可
+          3. APKファイルをタップしてインストール
+          
+          ### 対応端末
+          - Android 7.0 (API level 24) 以上
+          - Galaxy Z Fold 6 (Android 15) 動作確認済み
+          
+          ### 注意事項
+          - 初回起動時に位置情報、カメラ、マイクの権限許可が必要です
+          - データは端末内に保存されます
+          
+        files: |
+          build/app/outputs/flutter-apk/app-release.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
