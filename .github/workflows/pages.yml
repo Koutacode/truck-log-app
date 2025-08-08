@@ -1,0 +1,61 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable  # 必要なら flutter-version を固定してもOK
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Compute base-href for GitHub Pages
+        id: base
+        shell: bash
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          # ユーザーサイト (<username>.github.io) の場合は "/" 、通常は "/<repo>/"
+          if [[ "$REPO" == "${GITHUB_REPOSITORY_OWNER}.github.io" ]]; then
+            echo "BASE=/" >> "$GITHUB_OUTPUT"
+          else
+            echo "BASE=/$REPO/" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Flutter Web
+        run: flutter build web --release --base-href "${{ steps.base.outputs.BASE }}"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
