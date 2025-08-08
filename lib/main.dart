@@ -3,12 +3,20 @@ import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'providers/app_state.dart';
 import 'services/database_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // データベースの初期化
-  await DatabaseService.instance.database;
+    // データベースの初期化【Webはスキップ】
+  if (!kIsWeb) {
+    try {
+      await DatabaseService.instance.database;
+    } catch (e) {
+      // Webではデータベース初期化エラーを無視
+    }
+  }
   
   runApp(const TruckLogApp());
 }
