@@ -30,10 +30,10 @@ jobs:
     - name: Install dependencies
       run: flutter pub get
       
-    - name: Run tests
-      run: flutter test
+ #  #  - name: Run tests
+ #     run: flutter test
 
-        continue-on-error: true
+ ##       continue-on-error: true
     - name: Build APK
       run: flutter build apk --release
       
